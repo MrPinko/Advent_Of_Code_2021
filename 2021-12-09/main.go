@@ -26,130 +26,130 @@ func ReadFile() [][]int {
 	return heatmap
 }
 
+type LowPoint struct {
+	i int
+	j int
+}
+
+var lowPoint []LowPoint
+var basins [][]int
+var temp_basins = []int{}
+
 func main() {
 	heatmap := ReadFile()
 
-	// first row
-	// first row && first column
-	//middle
-	//last
-	// first row && first column
-	//middle
-	//last
-	// first row && first column
-	//middle
-	//last
 	answer := CalculateLowHeatmap(heatmap)
 
-	//fmt.Println(answer)
 	sum := 0
 	for _, e := range answer {
 		sum += e + 1
 	}
-	fmt.Println(sum)
+	fmt.Println("anser part one", sum) //answer part one
 
-	fmt.Print("\n\nPART TWO\n\n") //need good recursive method
+	fmt.Print("PART TWO\n") ////need good recursive method
 
-	//answer = CalculateLowHeatmap_two(heatmap)
-	//answer = WatchBasinTop(heatmap, 0, 0)
-	answer = WatchBasinTopRight(heatmap, 0, len(heatmap[0])-1)
-	fmt.Println(answer)
-
-}
-
-var temp = []int{}
-
-func WatchBasinTop(heatmap [][]int, i int, j int) []int {
-	if heatmap[i][j+1] == 9 {
-		if heatmap[i+1][0] != 9 {
-			temp = append(temp, heatmap[i][j])
-			return WatchBasinTop(heatmap, i+1, 0)
-		}
-	} else {
-		fmt.Println(heatmap[i][j])
-		temp = append(temp, heatmap[i][j])
-		return WatchBasinTop(heatmap, i, j+1)
+	for _, e := range lowPoint {
+		temp_basins = []int{}
+		basins = append(basins, CalculateBasis(CreateBorder(heatmap), e.i+1, e.j+1))
 	}
 
-	return append(temp, heatmap[i][j])
+	basins_len := []int{}
+	for _, e := range basins {
+		basins_len = append(basins_len, len(e))
+	}
+
+	CalculateHighBasins(basins_len) // answer
 }
 
-func WatchBasinTopRight(heatmap [][]int, i int, j int) []int {
+func CreateBorder(heatmap [][]int) [][]int {
+	border_heatmap := make([][]int, len(heatmap)+2) //add top and bottom border
+	for i := range border_heatmap {
+		border_heatmap[i] = make([]int, len(heatmap[0])+2) //add left and right border
+	}
 
-	if heatmap[i][j-1] == 9 {
-		temp = append(temp, heatmap[i][j])
-
-		for k := j; heatmap[i][k+1] != 9; k++ {
-			if heatmap[i+1][k] != 9 {
-				fmt.Println("test ", heatmap[i][j])
-				return WatchBasinTopRight(heatmap, i+1, k)
+	for i := 0; i < len(border_heatmap); i++ {
+		for j := 0; j < len(border_heatmap[0]); j++ {
+			if i == 0 || i == len(border_heatmap)-1 { //top or bottom
+				border_heatmap[i][j] = 9
+			} else if j == 0 || j == len(border_heatmap[0])-1 {
+				border_heatmap[i][j] = 9
+			} else {
+				border_heatmap[i][j] = heatmap[i-1][j-1]
 			}
 		}
-
-		fmt.Println(heatmap[i][j])
-		temp = append(temp, heatmap[i][j])
-		return WatchBasinTopRight(heatmap, i+1, len(heatmap[0])-1)
-	} else {
-		fmt.Println(heatmap[i][j])
-		temp = append(temp, heatmap[i][j])
-		return WatchBasinTopRight(heatmap, i, j-1)
 	}
 
-	return append(temp, heatmap[i][j])
-
-	// if heatmap[i][j] == 9 {
-	// 	if heatmap[i+1][0] != 9 {
-	// 		return WatchBasinTopRight(heatmap, i+1, len(heatmap[0])-1)
-	// } else {
-	// 	fmt.Println(heatmap[i][j])
-	// 	return WatchBasinTopRight(heatmap, i, j-1)
-	// }
-	// return nil
+	return border_heatmap
 }
 
-func CalculateLowHeatmap(heatmap [][]int) []int {
+func CalculateBasis(heatmap [][]int, i int, j int) []int {
+	if heatmap[i][j] == 9 {
+		return nil
+	}
+	temp_basins = append(temp_basins, heatmap[i][j])
+
+	//fmt.Println(heatmap[i][j])
+	heatmap[i][j] = 9               //delete coords
+	CalculateBasis(heatmap, i, j-1) //check right block
+	CalculateBasis(heatmap, i, j+1) //check left block
+	CalculateBasis(heatmap, i-1, j) //check top block
+	CalculateBasis(heatmap, i+1, j) //check bottom block
+
+	return temp_basins
+}
+
+func CalculateLowHeatmap(heatmap [][]int) []int { //bad but work
 	answer := []int{}
 	for i := 0; i < len(heatmap); i++ {
 		for j := 0; j < len(heatmap[0]); j++ {
 			if i == 0 {
 				if j == 0 {
 					if WatchDir(heatmap, i, j, "bottom") && WatchDir(heatmap, i, j, "right") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				} else if j != len(heatmap[0])-1 {
 					if WatchDir(heatmap, i, j, "bottom") && WatchDir(heatmap, i, j, "left") && WatchDir(heatmap, i, j, "right") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				} else {
 					if WatchDir(heatmap, i, j, "left") && WatchDir(heatmap, i, j, "bottom") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				}
 			} else if i != len(heatmap)-1 {
 				if j == 0 {
 					if WatchDir(heatmap, i, j, "top") && WatchDir(heatmap, i, j, "bottom") && WatchDir(heatmap, i, j, "right") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				} else if j != len(heatmap[0])-1 {
 					if WatchDir(heatmap, i, j, "left") && WatchDir(heatmap, i, j, "top") && WatchDir(heatmap, i, j, "right") && WatchDir(heatmap, i, j, "bottom") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				} else {
 					if WatchDir(heatmap, i, j, "top") && WatchDir(heatmap, i, j, "bottom") && WatchDir(heatmap, i, j, "left") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				}
 			} else {
 				if j == 0 {
 					if WatchDir(heatmap, i, j, "top") && WatchDir(heatmap, i, j, "right") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				} else if j != len(heatmap[0])-1 {
 					if WatchDir(heatmap, i, j, "top") && WatchDir(heatmap, i, j, "left") && WatchDir(heatmap, i, j, "right") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				} else {
 					if WatchDir(heatmap, i, j, "top") && WatchDir(heatmap, i, j, "left") {
+						lowPoint = append(lowPoint, LowPoint{i: i, j: j})
 						answer = append(answer, heatmap[i][j])
 					}
 				}
@@ -159,21 +159,28 @@ func CalculateLowHeatmap(heatmap [][]int) []int {
 	return answer
 }
 
-// func CalculateLowHeatmap_two(heatmap [][]int) []int {
-// 	answer := []int{}
-// 	for i := 0; i < len(heatmap); i++ {
-// 		for j := 0; j < len(heatmap[0]); j++ {
-// 			if i == 0 {
-// 				if j == 0 {
-// 					if WatchBasin(heatmap, i, j, "bottom") && WatchBasin(heatmap, i, j, "right") {
-// 						answer = append(answer, heatmap[i][j])
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return answer
-// }
+func CalculateHighBasins(num []int) {
+	temp := SortDSC(num)[:3]
+	sum := 1
+	for _, e := range temp {
+		sum *= e
+	}
+
+	fmt.Println("anser part two", sum) //answer
+}
+
+func SortDSC(a []int) []int {
+	for i := 0; i < len(a)-1; i++ {
+		for j := i + 1; j < len(a); j++ {
+			if a[i] < a[j] {
+				temp := a[i]
+				a[i] = a[j]
+				a[j] = temp
+			}
+		}
+	}
+	return a
+}
 
 func WatchDir(heatmap [][]int, i int, j int, dir string) bool {
 	switch dir {
